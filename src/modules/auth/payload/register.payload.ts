@@ -35,8 +35,7 @@ export class RegisterUserPayload {
   /**
    * Password field
    */
-  @IsNotEmpty()
-  @MinLength(8)
+  @IsNotEmpty({message: "Missing password"})
   password: string;
 
   @IsNotEmpty()

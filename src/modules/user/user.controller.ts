@@ -10,17 +10,16 @@ import {
   UseInterceptors,
   CacheInterceptor,
   CacheKey,
-  CacheTTL, NotFoundException, Query,
+  CacheTTL, NotFoundException, Query, Put,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { ACGuard, UseRoles } from "nest-access-control";
 import { UserService, IGenericMessageBody } from "./user.service";
-import { PatchProfilePayload } from "./payload/patch.profile.payload";
+import { PatchUserPayload } from "./payload/patch.user.payload";
 import {IUser, UserPaginated, UserResp} from "./user.model";
-import {errorsTypes} from "../../common/errors";
-import { plainToClass } from "class-transformer";
+import {errorsTypes} from "../../common/errors"
 import {userRespMapper} from "../../common/userResp.maper";
-// import {CacheInterceptor, CacheTTL} from "@nestjs/cache-manager";
+import {UpdateUserPayload} from "./payload/update.user.payload";
 
 /**
  * User Controller
@@ -58,40 +57,61 @@ export class UserController {
   @CacheTTL(10)
   @CacheKey("getAllUser")
   @Get()
-  async getAllUser(@Query("page") page: number ,@Query("per_page") perPage: number = 6): Promise<UserPaginated> {
-    return this.userService.getAllPagination(page, perPage);
+  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @UseRoles({
+    resource: "user",
+    action: "read",
+    possession: "any",
+  })
+  async getAllUser(@Query("page") page: number ,@Query("per_page") perPage: number = 6, @Query("delay") delay: number): Promise<UserPaginated> {
+    return this.userService.getAllPagination(page, perPage, delay);
   }
 
   /**
-   * Edit a user
+   * Patch a user
    * @param {RegisterUserPayload} payload
    * @returns {Promise<IUser>} mutated profile data
    */
-  @Patch()
-  @UseGuards(AuthGuard("jwt"))
+  @Patch(":id")
+  @UseGuards(AuthGuard("jwt"), ACGuard)
   @UseRoles({
     resource: "user",
     action: "update",
     possession: "any",
   })
-  async patchProfile(@Body() payload: PatchProfilePayload) {
-    return await this.userService.edit(payload);
+  async patchUser(@Param("id") id: string, @Body() payload: PatchUserPayload): Promise<IUser> {
+    return await this.userService.patch(id, payload);
   }
 
   /**
-   * Removes a user from the database
-   * @param {string} email the email to remove
-   * @returns {Promise<IGenericMessageBody>} whether or not the profile has been deleted
+   * Update a user
+   * @param {UpdateUserPayload} payload
+   * @returns {Promise<IUser>} mutated profile data
    */
-  @Delete(":email")
+  @Put(":id")
+  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @UseRoles({
+    resource: "user",
+    action: "update",
+    possession: "any",
+  })
+  async updateUser(@Param("id") id: string, @Body() payload: UpdateUserPayload): Promise<IUser> {
+    return await this.userService.update(id, payload);
+  }
+
+  /**
+   * Delete a user from the database
+   * @param {string} id the id to remove
+   * @returns {Promise<IGenericMessageBody>} whether or not the uer has been deleted
+   */
+  @Delete(":id")
   @UseGuards(AuthGuard("jwt"), ACGuard)
   @UseRoles({
     resource: "user",
     action: "create",
+    possession: "any",
   })
-  async delete(
-    @Param("email") email: string,
-  ): Promise<IGenericMessageBody> {
-    return await this.userService.delete(email);
+  async delete(@Param("id") id: string,): Promise<IGenericMessageBody> {
+    return await this.userService.delete(id);
   }
 }

@@ -10,12 +10,14 @@ import {
 import {IUser, UserPaginated, UserResp} from "./user.model";
 import {RegisterUserPayload} from "modules/auth/payload/register.payload";
 import { AppRoles } from "../app/app.roles";
-import { PatchProfilePayload } from "./payload/patch.profile.payload";
+import { PatchUserPayload } from "./payload/patch.user.payload";
 import {errorsTypes} from "../../common/errors";
 import * as argon2 from "argon2";
 import {ConfigService} from "../config/config.service";
 import {string} from "@hapi/joi";
 import {userRespMapper} from "../../common/userResp.maper";
+import { setTimeout } from "timers/promises";
+
 
 
 /**
@@ -59,7 +61,7 @@ export class UserService {
     return allUser;
   }
 
-  async getAllPagination(page: number, limit: number): Promise<UserPaginated> {
+  async getAllPagination(page: number, limit: number, delay: number | null): Promise<UserPaginated> {
     const total = await this.userModel.countDocuments();
     const totalPages = Math.ceil(total / limit);
     const allUser = await this.userModel
@@ -76,6 +78,10 @@ export class UserService {
     userPaginate.total = total;
     userPaginate.total_page = totalPages;
     userPaginate.per_page = limit;
+
+    if(delay){
+      await setTimeout(delay*1000);
+    }
 
     return userPaginate;
   }
@@ -118,29 +124,51 @@ export class UserService {
         d: "404",
       }),
       roles: roll,
+      date: Date.now()
     });
 
     return createdUser.save();
   }
 
-  async edit(payload: PatchProfilePayload): Promise<IUser> {
-    const { email } = payload;
-    const updatedProfile = await this.userModel.updateOne(
-      { email },
+  async update(id: string, payload: PatchUserPayload): Promise<IUser> {
+    const user = await this.getById(id);
+
+    if(!user) {
+      throw new NotFoundException(errorsTypes.user.USER_NOT_FOUND);
+    }
+
+    await this.userModel.updateOne(
+      { _id: id },
       payload,
     );
-    return this.getByEmail(email);
+    return this.getById(id);
   }
 
-  delete(username: string): Promise<IGenericMessageBody> {
-    return this.userModel.deleteOne({ username }).then(profile => {
-      if (profile.deletedCount === 1) {
-        return { message: `Deleted ${username} from records` };
-      } else {
-        throw new BadRequestException(
-          `Failed to delete a profile by the name of ${username}.`,
-        );
-      }
-    });
+  async patch(id: string, payload: PatchUserPayload): Promise<IUser> {
+    const user = await this.getById(id);
+    if (!user) {
+      throw new NotFoundException(errorsTypes.user.USER_NOT_FOUND);
+    }
+    if (payload.firstName) {
+      user.firstName = payload.firstName;
+    }
+    if (payload.lastName) {
+      user.lastName = payload.lastName;
+    }
+    if (payload.email) {
+    user.email = payload.email;
+    }
+    await user.save();
+    return this.getById(id);
+  }
+
+  delete(id: string): Promise<IGenericMessageBody> {
+    return this.userModel.deleteOne({ _id: id }).then(user => {
+      return { message: `Deleted ${id} from records` };
+    }).catch(error => {
+      throw new BadRequestException(
+          `Failed to delete a profile by the id of ${id}.`,
+      );
+    });;
   }
 }

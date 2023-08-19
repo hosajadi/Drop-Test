@@ -25,37 +25,37 @@ export interface IUser extends Document {
   /**
    * UUID
    */
-  readonly _id: Schema.Types.ObjectId;
+  _id: Schema.Types.ObjectId;
 
   /**
    * Email
    */
-  readonly email: string;
+  email: string;
 
   /**
    * firstName
    */
-  readonly firstName: string;
+  firstName: string;
 
   /**
    * lastName
    */
-  readonly lastName: string;
+  lastName: string;
 
   /**
    * Password
    */
-  readonly password: string;
+  password: string;
 
   /**
    * Salt for password
    */
-  readonly salt: string;
+  salt: string;
 
   /**
    * Avatar
    */
-  readonly avatar: string;
+  avatar: string;
 
   /**
    * Roles

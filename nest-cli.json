@@ -1,5 +1,16 @@
 {
   "language": "ts",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src"
+  "sourceRoot": "src",
+  "projects": {
+    "email-sender": {
+      "type": "library",
+      "root": "libs/email-sender",
+      "entryFile": "index",
+      "sourceRoot": "libs/email-sender/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/email-sender/tsconfig.lib.json"
+      }
+    }
+  }
 }

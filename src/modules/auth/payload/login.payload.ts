@@ -1,4 +1,4 @@
-import {IsEmail, IsNotEmpty, MinLength} from "class-validator";
+import {IsEmail, IsNotEmpty } from "class-validator";
 
 /**
  * Login Paylaod Class
@@ -14,7 +14,6 @@ export class LoginPayload {
   /**
    * Password field
    */
-  @IsNotEmpty()
-  @MinLength(8)
+  @IsNotEmpty({message: "Missing password"})
   password: string;
 }

@@ -3,38 +3,31 @@ import {
   IsNotEmpty,
   MinLength,
   IsAlphanumeric,
-  Matches,
+  Matches, IsOptional,
 } from "class-validator";
 
 /**
  * Patch Profile Payload Class
  */
-export class PatchProfilePayload {
+export class PatchUserPayload {
   /**
    * Email field
    */
   @IsEmail()
-  @IsNotEmpty()
+  @IsOptional()
   email: string;
 
   /**
    * FirstName field
    */
   @Matches(/^[a-zA-Z ]+$/)
-  @IsNotEmpty()
+  @IsOptional()
   firstName: string;
 
   /**
    * LastName field
    */
   @Matches(/^[a-zA-Z ]+$/)
-  @IsNotEmpty()
+  @IsOptional()
   lastName: string;
-
-  /**
-   * Password field
-   */
-  @IsNotEmpty()
-  @MinLength(8)
-  password: string;
 }

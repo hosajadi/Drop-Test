@@ -14,6 +14,7 @@ import { roles } from "./app.roles";
 import type { RedisClientOptions } from "redis";
 // import * as redisStore from "cache-manager-redis-store";
 import redisStore from "cache-manager-redis-store";
+import {ProductModule} from "../product/product.module";
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import redisStore from "cache-manager-redis-store";
     ConfigModule,
     AuthModule,
     UserModule,
+    ProductModule,
     AccessControlModule.forRoles(roles)
   ],
   controllers: [AppController],
