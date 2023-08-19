@@ -15,8 +15,23 @@ services:
     ports:
       - "80:80"
     environment:
-      MONGO_INITDB_DATABASE: nest
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
       - data-volume:/data/db
+  redis:
+    container_name: cache
+    image: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
 volumes:
   data-volume:
+  redis:
+    driver: local
+
+
+
+#docker run --name my-redis-container -d redis

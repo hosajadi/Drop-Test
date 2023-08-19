@@ -1,4 +1,3 @@
-import { ApiProperty } from "@nestjs/swagger";
 import {
   IsEmail,
   IsNotEmpty,
@@ -6,48 +5,40 @@ import {
   IsAlphanumeric,
   Matches,
 } from "class-validator";
+import {AppRoles} from "../../app/app.roles";
 
 /**
- * Register Payload Class
+ * Register USer Payload Class
  */
-export class RegisterPayload {
+export class RegisterUserPayload {
   /**
    * Email field
    */
-  @ApiProperty({
-    required: true,
-  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
   /**
-   * Username field
+   * FirstName field
    */
-  @ApiProperty({
-    required: true,
-  })
-  @IsAlphanumeric()
-  @IsNotEmpty()
-  username: string;
-
-  /**
-   * Name field
-   */
-  @ApiProperty({
-    required: true,
-  })
   @Matches(/^[a-zA-Z ]+$/)
   @IsNotEmpty()
-  name: string;
+  firstName: string;
+
+  /**
+   * LastName field
+   */
+  @Matches(/^[a-zA-Z ]+$/)
+  @IsNotEmpty()
+  lastName: string;
 
   /**
    * Password field
    */
-  @ApiProperty({
-    required: true,
-  })
   @IsNotEmpty()
   @MinLength(8)
   password: string;
+
+  @IsNotEmpty()
+  roll: AppRoles;
 }

@@ -1,9 +1,10 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "../config/config.service";
-import { ProfileService } from "../profile/profile.service";
-import { IProfile } from "../profile/profile.model";
+import { UserService } from "../user/user.service";
+import { IUser } from "../user/user.model";
 import { LoginPayload } from "./payload/login.payload";
+import {errorsTypes} from "../../common/errors";
 
 /**
  * Models a typical Login/Register route return body
@@ -13,14 +14,18 @@ export interface ITokenReturnBody {
    * When the token is to expire in seconds
    */
   expires: string;
+
   /**
    * A human-readable format of expires
    */
   expiresPrettyPrint: string;
+
   /**
    * The Bearer token
    */
-  token: string;
+  accessToken: string;
+
+  refreshToken: string;
 }
 
 /**
@@ -33,19 +38,15 @@ export class AuthService {
    * @type {string}
    */
   private readonly expiration: string;
+  private readonly refreshExpiration: string;
 
-  /**
-   * Constructor
-   * @param {JwtService} jwtService jwt service
-   * @param {ConfigService} configService
-   * @param {ProfileService} profileService profile service
-   */
   constructor(
-    private readonly jwtService: JwtService,
+      private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly profileService: ProfileService,
+    private readonly userService: UserService,
   ) {
     this.expiration = this.configService.get("WEBTOKEN_EXPIRATION_TIME");
+    this.refreshExpiration = this.configService.get("WEBTOKEN_REFRESH_EXPIRATION_TIME");
   }
 
   /**
@@ -53,16 +54,12 @@ export class AuthService {
    * @param {Profile} param dto to generate token from
    * @returns {Promise<ITokenReturnBody>} token body
    */
-  async createToken({
-    _id,
-    username,
-    email,
-    avatar,
-  }: IProfile): Promise<ITokenReturnBody> {
+  async createToken({_id, email, firstName, lastName}: IUser): Promise<ITokenReturnBody> {
     return {
       expires: this.expiration,
       expiresPrettyPrint: AuthService.prettyPrintSeconds(this.expiration),
-      token: this.jwtService.sign({ _id, username, email, avatar }),
+      accessToken: this.jwtService.sign({ _id, email, firstName, lastName }),
+      refreshToken: this.jwtService.sign({ _id, email, firstName, lastName }, {expiresIn: this.refreshExpiration})
     };
   }
 
@@ -83,18 +80,16 @@ export class AuthService {
   }
 
   /**
-   * Validates whether or not the profile exists in the database
+   * Validates whether or not the user exists in the database
    * @param {LoginPayload} payload login payload to authenticate with
-   * @returns {Promise<IProfile>} registered profile
+   * @returns {Promise<IUser>} registered profile
    */
-  async validateUser(payload: LoginPayload): Promise<IProfile> {
-    const user = await this.profileService.getByUsernameAndPass(
-      payload.username,
-      payload.password,
-    );
+  async validateUser(payload: LoginPayload): Promise<IUser> {
+    const user = await this.userService.getByEmailAndPass(payload.email, payload.password);
+
     if (!user) {
       throw new UnauthorizedException(
-        "Could not authenticate. Please try again.",
+        errorsTypes.user.USER_INVALID_CREDENTIAL,
       );
     }
     return user;

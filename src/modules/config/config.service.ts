@@ -18,10 +18,6 @@ export class ConfigService {
    */
   private readonly envConfig: EnvConfig;
 
-  /**
-   * Constructor
-   * @param {string} filePath
-   */
   constructor(filePath: string) {
     const config = parse(fs.readFileSync(filePath));
     this.envConfig = ConfigService.validateInput(config);
@@ -45,9 +41,18 @@ export class ConfigService {
       APP_URL: joi.string().uri({
         scheme: [/https?/],
       }),
+      APP_PORT: joi.number().required(),
       WEBTOKEN_SECRET_KEY: joi.string().required(),
       WEBTOKEN_EXPIRATION_TIME: joi.number().default(1800),
-      DB_URL: joi.string().regex(/^mongodb/),
+      WEBTOKEN_REFRESH_EXPIRATION_TIME: joi.number().default(2800),
+      MONGO_INITDB_ROOT_USERNAME: joi.string().required(),
+      MONGO_INITDB_ROOT_PASSWORD: joi.string().required(),
+      MONGO_INITDB_DATABASE: joi.string().required(),
+      DB_URL: joi.string().required(),
+      REDIS_HOST: joi.string().required(),
+      REDIS_PORT: joi.number().default(6379),
+      REDIS_CACHE_TTL: joi.number().default(30),
+      REDIS_CACHE_MAX: joi.number().default(100)
     });
 
     /**
