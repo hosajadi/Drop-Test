@@ -9,7 +9,7 @@ export interface IPaginatedType<T> {
 
 export function BasicPaginatedModel<T>(classRef: Type<T>): Type<IPaginatedType<T>> {
 
-    abstract class PaginatedType implements IPaginatedType<T> {
+    class PaginatedType implements IPaginatedType<T> {
         data: T[];
         page: number;
         total: number;

@@ -5,6 +5,7 @@ import { RegisterUserPayload } from "./payload/register.payload";
 import { UserService } from "../user/user.service";
 import {AuthGuard} from "@nestjs/passport";
 import {ACGuard, UseRoles} from "nest-access-control";
+import {JwtAuthGuard} from "./jwt.auth.guard";
 
 /**
  * Authentication Controller
@@ -31,7 +32,7 @@ export class AuthController {
    * @param {RegisterUserPayload} payload the registration dto
    */
   @Post("register")
-  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @UseGuards(JwtAuthGuard, ACGuard)
   @UseRoles({
     resource: "auth",
     action: "create",

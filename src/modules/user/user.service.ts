@@ -5,7 +5,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import {
   BadRequestException,
   Injectable,
-  NotAcceptableException, NotFoundException,
+  NotAcceptableException, NotFoundException, UseInterceptors,
 } from "@nestjs/common";
 import {IUser, UserPaginated, UserResp} from "./user.model";
 import {RegisterUserPayload} from "modules/auth/payload/register.payload";
@@ -17,6 +17,8 @@ import {ConfigService} from "../config/config.service";
 import {string} from "@hapi/joi";
 import {userRespMapper} from "../../common/userResp.maper";
 import { setTimeout } from "timers/promises";
+import {loggers} from "winston";
+import {CacheInterceptor, CacheKey, CacheTTL} from "@nestjs/cache-manager";
 
 
 
@@ -61,6 +63,8 @@ export class UserService {
     return allUser;
   }
 
+  @CacheTTL(5)
+  @UseInterceptors(CacheInterceptor)
   async getAllPagination(page: number, limit: number, delay: number | null): Promise<UserPaginated> {
     const total = await this.userModel.countDocuments();
     const totalPages = Math.ceil(total / limit);
@@ -85,6 +89,32 @@ export class UserService {
 
     return userPaginate;
   }
+
+  async getAllPaginationWithoutCache(page: number, limit: number, delay: number | null): Promise<UserPaginated> {
+    const total = await this.userModel.countDocuments();
+    const totalPages = Math.ceil(total / limit);
+    const allUser = await this.userModel
+        .find()
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec()
+    const allRespUser = allUser.map((user)=>{
+      return userRespMapper(user);
+    });
+    const userPaginate = new UserPaginated()
+    userPaginate.page = page;
+    userPaginate.data = allRespUser;
+    userPaginate.total = total;
+    userPaginate.total_page = totalPages;
+    userPaginate.per_page = limit;
+
+    if(delay){
+      await setTimeout(delay*1000);
+    }
+
+    return userPaginate;
+  }
+
 
   async getByEmailAndPass(email: string, password: string): Promise<IUser> {
     const user:IUser = await this.userModel.findOne({
@@ -132,15 +162,14 @@ export class UserService {
 
   async update(id: string, payload: PatchUserPayload): Promise<IUser> {
     const user = await this.getById(id);
-
     if(!user) {
       throw new NotFoundException(errorsTypes.user.USER_NOT_FOUND);
     }
 
-    await this.userModel.updateOne(
-      { _id: id },
-      payload,
-    );
+    user.firstName = payload.firstName;
+    user.lastName = payload.lastName;
+    user.email = payload.email;
+    await user.save();
     return this.getById(id);
   }
 

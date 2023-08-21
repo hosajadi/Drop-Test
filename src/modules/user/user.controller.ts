@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,11 +7,8 @@ import {
   Patch,
   UseGuards,
   UseInterceptors,
-  CacheInterceptor,
-  CacheKey,
-  CacheTTL, NotFoundException, Query, Put,
+  NotFoundException, Query, Put, ForbiddenException
 } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { ACGuard, UseRoles } from "nest-access-control";
 import { UserService, IGenericMessageBody } from "./user.service";
 import { PatchUserPayload } from "./payload/patch.user.payload";
@@ -20,6 +16,10 @@ import {IUser, UserPaginated, UserResp} from "./user.model";
 import {errorsTypes} from "../../common/errors"
 import {userRespMapper} from "../../common/userResp.maper";
 import {UpdateUserPayload} from "./payload/update.user.payload";
+import {CurrentUser} from "../../common/user.decorator";
+import {AppRoles} from "../app/app.roles";
+import {JwtAuthGuard} from "../auth/jwt.auth.guard";
+import {CacheTTL, CacheKey, CacheInterceptor } from "@nestjs/cache-manager";
 
 /**
  * User Controller
@@ -34,16 +34,10 @@ export class UserController {
    * @param id the user given id to fetch
    * @returns {Promise<IUser>} queried profile data
    */
+  @CacheTTL(5)
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(10)
-  @CacheKey("getById")
   @Get(":id")
-  @UseGuards(AuthGuard("jwt"))
-  @UseRoles({
-    resource: "user",
-    action: "read",
-    possession: "any",
-  })
+  @UseGuards(JwtAuthGuard, ACGuard)
   async getUserById(@Param("id") id: string): Promise<UserResp> {
     const user = await this.userService.getById(id);
     if (!user) {
@@ -53,18 +47,18 @@ export class UserController {
     return userRespMapper(user);
   }
 
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(10)
-  @CacheKey("getAllUser")
   @Get()
-  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @UseGuards(JwtAuthGuard, ACGuard)
   @UseRoles({
     resource: "user",
     action: "read",
     possession: "any",
   })
   async getAllUser(@Query("page") page: number ,@Query("per_page") perPage: number = 6, @Query("delay") delay: number): Promise<UserPaginated> {
-    return this.userService.getAllPagination(page, perPage, delay);
+    if (delay) {
+      return this.userService.getAllPaginationWithoutCache(page, perPage, delay);
+    }
+  return this.userService.getAllPagination(page, perPage, delay);
   }
 
   /**
@@ -72,15 +66,21 @@ export class UserController {
    * @param {RegisterUserPayload} payload
    * @returns {Promise<IUser>} mutated profile data
    */
-  @Patch(":id")
-  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @Patch(":id?")
+  @UseGuards(JwtAuthGuard, ACGuard)
   @UseRoles({
     resource: "user",
     action: "update",
-    possession: "any",
+    possession: "own",
   })
-  async patchUser(@Param("id") id: string, @Body() payload: PatchUserPayload): Promise<IUser> {
-    return await this.userService.patch(id, payload);
+  async patchUser(@CurrentUser() user: IUser, @Param("id") id: string, @Body() payload: PatchUserPayload): Promise<IUser> {
+    if(id){
+      if(user.roles.includes(AppRoles.ADMIN)){
+        return await this.userService.patch(id, payload);
+      }
+      throw new ForbiddenException(errorsTypes.user.USER_NOT_ALLOWED)
+    }
+    return await this.userService.patch(user.id, payload);
   }
 
   /**
@@ -88,15 +88,21 @@ export class UserController {
    * @param {UpdateUserPayload} payload
    * @returns {Promise<IUser>} mutated profile data
    */
-  @Put(":id")
-  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @Put(":id?")
+  @UseGuards( JwtAuthGuard)
   @UseRoles({
     resource: "user",
     action: "update",
-    possession: "any",
+    possession: "own",
   })
-  async updateUser(@Param("id") id: string, @Body() payload: UpdateUserPayload): Promise<IUser> {
-    return await this.userService.update(id, payload);
+  async updateUser(@CurrentUser() user: IUser, @Param("id") id: string, @Body() payload: UpdateUserPayload): Promise<IUser> {
+    if(id){
+      if (user.roles.includes(AppRoles.ADMIN)){
+        return await this.userService.update(id, payload);
+      }
+      throw new ForbiddenException(errorsTypes.user.USER_NOT_ALLOWED)
+    }
+    return await this.userService.update(user.id, payload);
   }
 
   /**
@@ -105,7 +111,7 @@ export class UserController {
    * @returns {Promise<IGenericMessageBody>} whether or not the uer has been deleted
    */
   @Delete(":id")
-  @UseGuards(AuthGuard("jwt"), ACGuard)
+  @UseGuards(JwtAuthGuard, ACGuard)
   @UseRoles({
     resource: "user",
     action: "create",
@@ -113,5 +119,11 @@ export class UserController {
   })
   async delete(@Param("id") id: string,): Promise<IGenericMessageBody> {
     return await this.userService.delete(id);
+  }
+
+  @Get("/currentUser")
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUser(@CurrentUser() user: IUser): Promise<IUser>{
+    return user;
   }
 }

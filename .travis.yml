@@ -11,7 +11,7 @@ install:
 before_script:
   - "cp .env.example .env"
 script:
-  - "npm run test:e2e"
+  - "yarn run test:e2e"
 branches:
   only:
     - master
