@@ -19,7 +19,7 @@ import {UpdateUserPayload} from "./payload/update.user.payload";
 import {CurrentUser} from "../../common/user.decorator";
 import {AppRoles} from "../app/app.roles";
 import {JwtAuthGuard} from "../auth/jwt.auth.guard";
-import {CacheTTL, CacheKey, CacheInterceptor } from "@nestjs/cache-manager";
+import {CacheTTL, CacheInterceptor } from "@nestjs/cache-manager";
 
 /**
  * User Controller

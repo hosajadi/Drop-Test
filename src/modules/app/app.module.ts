@@ -13,13 +13,10 @@ import { UserModule } from "../user/user.module";
 import { AccessControlModule } from "nest-access-control";
 import { roles } from "./app.roles";
 import {ProductModule} from "../product/product.module";
-// import { redisStore } from "cache-manager-redis-store";
 
 
 @Module({
   imports: [
-    // MongooseModule.forRootAsync("mongodb://localhost:27017/rahyab"),
-    // CacheModule.register(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
