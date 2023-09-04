@@ -1,71 +1,83 @@
-import { Schema, Document } from "mongoose";
-import { AppRoles } from "modules/app/app.roles";
+import * as mongose from "mongoose";
+import { AppRoles } from "../app/app.roles";
 import {Exclude, Expose} from "class-transformer";
 import {BasicPaginatedModel} from "../../common/pagination.mapper";
+import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose";
 
 
-/**
- * Mongoose User Schema
- */
-export const User = new Schema({
-  email: { type: String, required: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  password: { type: String, required: true },
-  salt: { type: String, required: true },
-  avatar: { type: String, required: true },
-  roles: [{ type: String }],
-  date: {type: Date, default: Date.now},
-});
+// /**
+//  * Mongoose User Schema
+//  */
+// export const User = new Schema({
+//   _id: { type: Schema.Types.ObjectId },
+//   email: { type: String, required: true },
+//   firstName: { type: String, required: true },
+//   lastName: { type: String, required: true },
+//   password: { type: String, required: true },
+//   salt: { type: String, required: true },
+//   avatar: { type: String, required: true },
+//   roles: [{ type: String }],
+//   date: {type: Date, default: Date.now},
+// });
 
 /**
  * Mongoose User Document
  */
-export interface IUser extends Document {
+@Schema()
+export class IUser extends mongose.Document {
   /**
    * UUID
    */
-  _id: Schema.Types.ObjectId;
+  @Prop( mongose.SchemaTypes.ObjectId,)
+  id: string;
 
   /**
    * Email
    */
+  @Prop()
   email: string;
 
   /**
    * firstName
    */
+  @Prop()
   firstName: string;
 
   /**
    * lastName
    */
+  @Prop()
   lastName: string;
 
   /**
    * Password
    */
+  @Prop()
   password: string;
 
   /**
    * Salt for password
    */
+  @Prop()
   salt: string;
 
   /**
    * Avatar
    */
+  @Prop()
   avatar: string;
 
   /**
    * Roles
    */
-  readonly roles: AppRoles;
+  @Prop()
+  roles: AppRoles;
 
   /**
    * Date
    */
-  readonly date: Date;
+  @Prop()
+  date: Date;
 }
 
 export class UserResp {
@@ -81,3 +93,5 @@ export class UserResp {
 }
 
 export class UserPaginated extends BasicPaginatedModel(UserResp) {}
+
+export const User = SchemaFactory.createForClass(IUser);

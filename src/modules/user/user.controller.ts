@@ -120,7 +120,7 @@ export class UserController {
   async delete(@Param("id") id: string,): Promise<IGenericMessageBody> {
     return await this.userService.delete(id);
   }
-
+  //
   @Get("/currentUser")
   @UseGuards(JwtAuthGuard)
   async getCurrentUser(@CurrentUser() user: IUser): Promise<IUser>{

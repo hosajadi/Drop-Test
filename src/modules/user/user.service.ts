@@ -1,4 +1,3 @@
-import * as crypto from "crypto";
 import * as gravatar from "gravatar";
 import { Model } from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
@@ -9,16 +8,13 @@ import {
 } from "@nestjs/common";
 import {IUser, UserPaginated, UserResp} from "./user.model";
 import {RegisterUserPayload} from "modules/auth/payload/register.payload";
-import { AppRoles } from "../app/app.roles";
 import { PatchUserPayload } from "./payload/patch.user.payload";
 import {errorsTypes} from "../../common/errors";
 import * as argon2 from "argon2";
 import {ConfigService} from "../config/config.service";
-import {string} from "@hapi/joi";
 import {userRespMapper} from "../../common/userResp.maper";
 import { setTimeout } from "timers/promises";
-import {loggers} from "winston";
-import {CacheInterceptor, CacheKey, CacheTTL} from "@nestjs/cache-manager";
+// import {CacheInterceptor, CacheKey, CacheTTL} from "@nestjs/cache-manager";
 
 
 
@@ -47,7 +43,6 @@ export class UserService {
   ) {}
 
   getById(id: string): Promise<IUser> {
-    const userResp = new UserResp();
     return this.userModel.findById(id).exec();
   }
 
@@ -63,8 +58,8 @@ export class UserService {
     return allUser;
   }
 
-  @CacheTTL(5)
-  @UseInterceptors(CacheInterceptor)
+  // @CacheTTL(5)
+  // @UseInterceptors(CacheInterceptor)
   async getAllPagination(page: number, limit: number, delay: number | null): Promise<UserPaginated> {
     const total = await this.userModel.countDocuments();
     const totalPages = Math.ceil(total / limit);
@@ -115,7 +110,6 @@ export class UserService {
     return userPaginate;
   }
 
-
   async getByEmailAndPass(email: string, password: string): Promise<IUser> {
     const user:IUser = await this.userModel.findOne({
       email,
@@ -135,9 +129,7 @@ export class UserService {
   async create(payload: RegisterUserPayload): Promise<IUser> {
     const user = await this.getByEmail(payload.email);
     if (user) {
-      throw new NotAcceptableException(
-        errorsTypes.user.USER_ALREADY_EXIST,
-      );
+      throw new NotAcceptableException(errorsTypes.user.USER_ALREADY_EXIST);
     }
     const salt = await argon2.hash(this.configService.get("WEBTOKEN_SECRET_KEY"));
     const {firstName, lastName, email, roll} = payload;
